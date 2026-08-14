@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Leaderboard · Vinksters Golf 2026</title>
+  <style>
+    :root {
+      --g900: #071a0c;
+      --g800: #0d3318;
+      --g700: #1a5c2e;
+      --g600: #2d7a42;
+      --gold: #c9a227;
+      --bg:   #f3f7f0;
+      --surface: #ffffff;
+      --border: #d8e8cf;
+      --text: #111a0e;
+      --text-dim: #3d5230;
+      --text-muted: #7a9465;
+      --green: #27ae60;
+      --red:   #c0392b;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(8,30,12,.09);
+      --font: 'Calibri','Segoe UI',system-ui,sans-serif;
+      --max: 620px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; }
+
+    /* Header */
+    .header { background: linear-gradient(160deg,var(--g900) 0%,#0a2e12 100%); padding: 18px 16px 14px; border-bottom: 3px solid var(--gold); }
+    .header-inner { max-width: var(--max); margin: 0 auto; }
+    .header h1 { font-size: 20px; font-weight: 900; color: #fff; line-height: 1.2; }
+    .header h1 span { color: var(--gold); }
+    .header-sub { font-size: 12px; color: #6a9a72; margin-top: 3px; }
+    #last-updated { font-size: 11px; color: #4a6e4f; margin-top: 4px; }
+
+    /* Upload bar */
+    .upload-bar { background: var(--g800); border-bottom: 1px solid var(--g700); padding: 8px 16px; }
+    .upload-inner { max-width: var(--max); margin: 0 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .upload-lbl { font-size: 11px; font-weight: 700; color: #5a8a6a; }
+    .upload-btn { display: inline-flex; align-items: center; gap: 5px; background: var(--gold); color: var(--g900); font-size: 11px; font-weight: 800; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: none; }
+    .upload-btn:hover { opacity: .88; }
+    #csv-input { display: none; }
+    #upload-status { font-size: 11px; color: #5a8a6a; font-style: italic; }
+    #share-btn { display: none; align-items: center; gap: 5px; background: rgba(201,162,39,.12); color: var(--gold); font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 6px; cursor: pointer; border: 1px solid rgba(201,162,39,.3); }
+    #share-btn:hover { background: rgba(201,162,39,.22); }
+
+    /* Mapping panel */
+    #mapping-panel { background: var(--g800); border-bottom: 2px solid var(--gold); padding: 14px 16px; }
+    .mp-inner { max-width: var(--max); margin: 0 auto; }
+    .mp-title { font-size: 13px; font-weight: 800; color: var(--gold); margin-bottom: 4px; }
+    .mp-sub { font-size: 11px; color: #5a8a6a; margin-bottom: 12px; }
+    .mp-rows { display: flex; flex-direction: column; gap: 8px; }
+    .mp-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .mp-dk { font-size: 12px; font-weight: 700; color: #9de0a0; min-width: 140px; }
+    .mp-arrow { color: #5a8a6a; font-size: 12px; }
+    .mp-select { flex: 1; min-width: 160px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--g600); background: var(--g900); color: #eee; font-size: 12px; }
+    .mp-actions { margin-top: 12px; display: flex; gap: 10px; align-items: center; }
+    .mp-save { background: var(--gold); color: var(--g900); font-size: 11px; font-weight: 800; padding: 7px 16px; border-radius: 6px; border: none; cursor: pointer; }
+    .mp-save:hover { opacity: .88; }
+    .mp-clear { background: none; color: #5a8a6a; font-size: 11px; border: none; cursor: pointer; text-decoration: underline; }
+    .mp-close { float: right; background: none; border: none; color: #5a8a6a; font-size: 18px; cursor: pointer; line-height: 1; }
+
+    /* Match warning */
+    #match-warn { display: none; max-width: var(--max); margin: 8px auto 0; padding: 7px 16px; font-size: 11px; color: #c08020; background: rgba(201,130,0,.07); border-left: 3px solid #c08020; }
+
+    /* Main */
+    .main { max-width: var(--max); margin: 10px auto 40px; padding: 0 10px; }
+
+    /* Empty state */
+    #empty-state { text-align: center; padding: 50px 16px; }
+    .empty-icon  { font-size: 36px; margin-bottom: 8px; }
+    .empty-title { font-size: 15px; font-weight: 700; color: var(--text-dim); margin-bottom: 4px; }
+    .empty-sub   { font-size: 12px; color: var(--text-muted); }
+
+    /* Table */
+    #table-wrap { display: none; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { padding: 9px 10px; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #6aaa7a; background: var(--g900); text-align: left; white-space: nowrap; }
+    thead th.r { text-align: right; }
+    thead th:first-child { padding-left: 14px; }
+    thead th:last-child  { padding-right: 14px; }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:last-child  { border-bottom: none; }
+    tbody tr:hover { background: rgba(45,122,66,.04) !important; }
+    td { padding: 9px 10px; font-size: 13px; vertical-align: middle; }
+    td:first-child { padding-left: 14px; }
+    td:last-child  { padding-right: 14px; }
+    td.r { text-align: right; }
+
+    /* Cutoff row */
+    tr.cutoff-row td { padding: 5px 14px; font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #3a5a7a; background: rgba(90,130,180,.08); border-top: 2px solid #90a8c0; border-bottom: 2px solid #90a8c0; }
+
+    /* Movement */
+    .mv { display: inline-block; font-size: 10px; font-weight: 800; min-width: 28px; text-align: center; }
+    .mv-up   { color: var(--green); }
+    .mv-dn   { color: var(--red); }
+    .mv-same { color: #ccc; }
+
+    /* Rank / player / scores */
+    .rank      { font-size: 14px; font-weight: 900; color: var(--text-dim); }
+    .rank.gold { color: var(--gold); }
+    .pname     { font-size: 13px; font-weight: 700; }
+    .dk-score  { font-size: 13px; font-weight: 800; color: var(--g700); }
+    .season-pts{ font-size: 12px; color: var(--text-dim); }
+    .proj-pts  { font-size: 12px; font-weight: 700; }
+    .total-pts { font-size: 13px; font-weight: 900; }
+
+    /* Mobile — hide Season Pts and + This Week columns */
+    @media (max-width: 480px) {
+      thead th:nth-child(5), tbody td:nth-child(5),
+      thead th:nth-child(6), tbody td:nth-child(6) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>⛳ FedEx St. Jude <span>Live Standings</span></h1>
+    <div class="header-sub">Thru Round 1</div>
+  </div>
+</div>
+
+<div class="upload-bar">
+  <div class="upload-inner">
+    <span class="upload-lbl">Commissioner:</span>
+    <label class="upload-btn" for="csv-input">📂 Upload DK CSV</label>
+    <input type="file" id="csv-input" accept=".csv,.txt" />
+    <span id="upload-status">No lineup file — upload your DraftKings contest CSV</span>
+    <button id="share-btn" onclick="copyShareURL()">🔗 Share URL</button>
+  </div>
+</div>
+
+<div id="mapping-panel" style="display:none">
+  <div class="mp-inner">
+    <button class="mp-close" onclick="document.getElementById('mapping-panel').style.display='none'">×</button>
+    <div class="mp-title">🔗 Match DK Usernames → Standings Names</div>
+    <div class="mp-sub">These DK usernames didn't auto-match the standings. Pick the right player for each, then click Save — it remembers forever.</div>
+    <div id="mapping-rows" class="mp-rows"></div>
+    <div class="mp-actions">
+      <button class="mp-save" onclick="saveMapping()">Save & Apply</button>
+      <button class="mp-clear" onclick="clearSavedMapping()">Reset saved mapping</button>
+    </div>
+  </div>
+</div>
+
+<div id="match-warn" style="padding:0 10px;max-width:620px;margin:8px auto 0"></div>
+
+<div class="main">
+  <div id="empty-state">
+    <div class="empty-icon">⛳</div>
+    <div class="empty-title">Upload your DraftKings contest CSV to activate the leaderboard</div>
+    <div class="empty-sub">In your DK contest, click <strong>Export</strong> or <strong>Download CSV</strong> → upload above.<br>The CSV contains live DK scores — re-upload anytime to refresh standings.</div>
+  </div>
+
+  <div id="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:46px">#</th>
+          <th style="width:48px">+/−</th>
+          <th>Player</th>
+          <th class="r">DK Score</th>
+          <th class="r">Season Pts</th>
+          <th class="r">+ This Week</th>
+          <th class="r">Total</th>
+        </tr>
+      </thead>
+      <tbody id="standings-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<footer style="background:var(--g900);border-top:2px solid var(--gold);padding:12px 16px;text-align:center">
+  <p style="font-size:11px;color:#3d5a3a;letter-spacing:.04em">© 2026 <span style="color:var(--gold)">Vinksters Golf League</span> · Scores from DK CSV</p>
+</footer>
+
+<script>
+// ─── Config ───────────────────────────────
+const FEDEX_DIST = [140,130,120,110,100,95,90,85,80,75,70,65,60,55,50,45,40,37.5,35,32.5,30,27.5,25,22.5,20,17.5,15,12.5,10,7.5,5,2.5];
+const SHEET_ID   = '11ZLk3YMe6II27HqFQ1hb1Lf7C47W8iF8wwNQ4MBWgOI';
+
+// ─── Name Map ─────────────────────────────
+// Maps each DK username → exact name as it appears in the standings sheet.
+// Add one line per player. DK username is case-sensitive (copy it from the CSV).
+const NAME_MAP = {
+  // 'DK_Username':  'Standings Name',
+};
+const LS_KEY     = 'golf_live_v4';  // v4 = CSV-fpts format
+
+// ─── State ────────────────────────────────
+// lineups: [{dkName:string, golfers:string[], fpts:number}]
+let lineups          = [];
+let standings        = []; // [{rank,player,fedexPts}]
+let savedMap         = {}; // {dkName: standingsName} — persisted to localStorage
+let pendingUnmatched = []; // current list needing mapping (globally accessible)
+const MAP_KEY        = 'golf_name_map_v1';
+
+function loadSavedMap() {
+  try { const s = localStorage.getItem(MAP_KEY); if (s) savedMap = JSON.parse(s); } catch(_) {}
+}
+
+// ─── Helpers ──────────────────────────────
+const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+
+function parseCSVLine(line) {
+  const cols = []; let cur = '', inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else { cur += ch; }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+// ─── CSV Parser ───────────────────────────
+// Reads DraftKings contest export CSV.
+// Returns {entries, hasPts}
+//   entries: [{dkName, golfers, fpts}]
+//   hasPts:  true if the Points column had non-zero values
+function parseDKCSV(raw) {
+  const lines = raw.replace(/\r/g,'').split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('CSV appears empty.');
+
+  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[\s"']/g,''));
+  console.log('[live] CSV headers detected:', headers);
+
+  // Name column — exact matches first to avoid grabbing EntryId before EntryName
+  const nameIdx = (() => {
+    const exact = ['entryname','name','username','player'];
+    for (const e of exact) { const i = headers.indexOf(e); if (i >= 0) return i; }
+    return headers.findIndex(h => h.includes('name') || (h.includes('entry') && !h.includes('id')));
+  })();
+  if (nameIdx < 0) throw new Error(`Name column not found. CSV headers: ${headers.join(', ')}`);
+
+  // Points / FPTS column — this is DK's own calculated fantasy score
+  const ptsIdx = (() => {
+    const exact = ['points','fpts','fantasypoints','totalpoints','totalfpts','pts'];
+    for (const e of exact) { const i = headers.indexOf(e); if (i >= 0) return i; }
+    return headers.findIndex(h => h.includes('point') || h.includes('fpts'));
+  })();
+
+  // Lineup column
+  const lineupIdx = headers.findIndex(h => h === 'lineup' || h === 'lineups');
+
+  const entries = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCSVLine(lines[i]);
+    if (!cols[nameIdx]) continue;
+
+    // Strip "(1/1)" entry suffix from DK usernames
+    const dkName = cols[nameIdx].replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
+    if (!dkName) continue;
+
+    // DK's own FPTS — the number the site shows as your score
+    const fpts = ptsIdx >= 0 ? (parseFloat(cols[ptsIdx]) || 0) : 0;
+
+    let golfers = [];
+    if (lineupIdx >= 0 && cols[lineupIdx]) {
+      golfers = cols[lineupIdx]
+        .split('|')
+        .map(g => g.replace(/^[A-Z]{1,3}\s+/, '').trim())
+        .filter(g => g.length > 2);
+    }
+
+    entries.push({ dkName, golfers, fpts });
+  }
+
+  if (!entries.length) throw new Error('No lineups found. Make sure the CSV has a "Lineup" column.');
+
+  const hasPts = ptsIdx >= 0 && entries.some(e => e.fpts > 0);
+  return { entries, hasPts };
+}
+
+// ─── Fallback standings (embedded so page works even offline / from file://) ──
+// Pulled directly from the standings sheet. Update after each tournament.
+const FALLBACK_STANDINGS = [
+  {rank:1,  player:'creythauncey',      fedexPts:1152},
+  {rank:2,  player:'smittyjo5',         fedexPts:1095.5},
+  {rank:3,  player:'mdougherty88',      fedexPts:1059.5},
+  {rank:4,  player:'sneaksox',          fedexPts:1056.5},
+  {rank:5,  player:'DJderek13',         fedexPts:1052.5},
+  {rank:6,  player:'jichrist',          fedexPts:1049},
+  {rank:7,  player:'watz23',            fedexPts:1022.5},
+  {rank:8,  player:'sudi1323',          fedexPts:1016},
+  {rank:9,  player:'paulsupple',        fedexPts:1013.5},
+  {rank:10, player:'vinkster15',        fedexPts:1013.5},
+  {rank:11, player:'PonyBoy1319',       fedexPts:1002.5},
+  {rank:12, player:'LSUNick413',        fedexPts:993},
+  {rank:13, player:'BrooksyGoingLow',   fedexPts:977.5},
+  {rank:14, player:'bcal85',            fedexPts:976.5},
+  {rank:15, player:'monte_cristo14',    fedexPts:972.5},
+  {rank:16, player:'tw1289',            fedexPts:969.5},
+  {rank:17, player:'tchauncey12',       fedexPts:963.5},
+  {rank:18, player:'awells806',         fedexPts:956.5},
+  {rank:19, player:'rhettnovy09',       fedexPts:936},
+  {rank:20, player:'mvinke',            fedexPts:934},
+  {rank:21, player:'HeHateMe14',        fedexPts:930.5},
+  {rank:22, player:'rc2393',            fedexPts:927.5},
+  {rank:23, player:'schroedzy',         fedexPts:919.5},
+  {rank:24, player:'gatordoc1313',      fedexPts:897.5},
+  {rank:25, player:'fadeintobolivian',  fedexPts:894.5},
+  {rank:26, player:'droid1232',         fedexPts:891.5},
+  {rank:27, player:'charmike67',        fedexPts:888.5},
+  {rank:28, player:'EmmyKay',           fedexPts:878},
+  {rank:29, player:'jsizzle727',        fedexPts:874},
+  {rank:30, player:'BostonRules14',     fedexPts:868.5},
+  {rank:31, player:'reesejo82',         fedexPts:858.5},
+  {rank:32, player:'flowerscrew13',     fedexPts:854.5},
+];
+
+// Strips any non-numeric prefix/suffix (handles "T9", "=9", "9T", plain "9", or actual number 9)
+function parseRank(v) {
+  if (typeof v === 'number') return v;
+  const n = parseInt(String(v).replace(/[^0-9]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+// ─── Standings — always use hardcoded fallback ────────────────────────────
+// Pre-tournament standings don't change mid-week.
+// Update FALLBACK_STANDINGS after each tournament completes.
+function fetchStandings() {
+  standings = [...FALLBACK_STANDINGS];
+  return Promise.resolve();
+}
+
+// ─── Season Data Lookup ───────────────────
+function getSeasonData(dkName) {
+  // 1. Saved map (set via the mapping panel) — takes top priority
+  const fromSaved = savedMap[dkName] || savedMap[dkName.trim()];
+  if (fromSaved) return standings.find(s => s.player === fromSaved) || null;
+
+  // 2. Hardcoded NAME_MAP (fallback for code-level overrides)
+  const fromCode = NAME_MAP[dkName] || NAME_MAP[dkName.trim()];
+  if (fromCode) return standings.find(s => s.player === fromCode) || null;
+
+  // 3. Auto fuzzy match
+  const dk = norm(dkName);
+  return standings.find(s => norm(s.player) === dk)
+      || standings.find(s => dk.includes(norm(s.player)) || norm(s.player).includes(dk))
+      || standings.find(s => {
+           const dkW = dkName.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(w=>w.length>2);
+           const sW  = s.player.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/);
+           return dkW.some(w => sW.includes(w));
+         })
+      || null;
+}
+
+// ─── Mapping Panel ────────────────────────
+function openMappingPanel() {
+  showMappingPanel(pendingUnmatched);
+}
+
+function showMappingPanel(unmatchedNames) {
+  if (!unmatchedNames.length) return;
+
+  if (!standings.length) { standings = FALLBACK_STANDINGS; }
+
+  const sorted  = [...standings].sort((a,b) => a.player.localeCompare(b.player));
+  const options = sorted.map(s => `<option value="${s.player}">${s.player}</option>`).join('');
+
+  document.getElementById('mapping-rows').innerHTML = unmatchedNames.map(dk => {
+    const saved = savedMap[dk] || '';
+    // Build options and set selected via JS after inserting
+    return `<div class="mp-row">
+      <span class="mp-dk">${dk}</span>
+      <span class="mp-arrow">→</span>
+      <select class="mp-select" data-dk="${dk}">
+        <option value="">— select player —</option>
+        ${options}
+      </select>
+    </div>`;
+  }).join('');
+
+  // Set pre-selected values via JS (avoids attribute-quoting issues)
+  document.querySelectorAll('#mapping-rows .mp-select').forEach(sel => {
+    const dk = sel.dataset.dk;
+    if (savedMap[dk]) sel.value = savedMap[dk];
+  });
+
+  document.getElementById('mapping-panel').style.display = 'block';
+  document.getElementById('mapping-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function saveMapping() {
+  document.querySelectorAll('#mapping-rows .mp-select').forEach(sel => {
+    if (sel.value) savedMap[sel.dataset.dk] = sel.value;
+  });
+  try { localStorage.setItem(MAP_KEY, JSON.stringify(savedMap)); } catch(_) {}
+  document.getElementById('mapping-panel').style.display = 'none';
+  render();
+}
+
+function clearSavedMapping() {
+  if (!confirm('Clear all saved name mappings?')) return;
+  savedMap = {};
+  try { localStorage.removeItem(MAP_KEY); } catch(_) {}
+  render();
+}
+
+// ─── FedEx Distribution ───────────────────
+// Ties share the average of the tied positions' points
+function applyDist(ranked) {
+  let i = 0;
+  while (i < ranked.length) {
+    let j = i;
+    while (j < ranked.length && ranked[j].dkScore === ranked[i].dkScore) j++;
+    const pts = FEDEX_DIST.slice(i, Math.min(j, FEDEX_DIST.length));
+    const avg = pts.length ? pts.reduce((a,b)=>a+b,0)/pts.length : 0;
+    for (let k = i; k < j; k++) { ranked[k].weekRank = i+1; ranked[k].projPts = avg; }
+    i = j;
+  }
+}
+
+// ─── CSV lookup by standings player name ──
+// Finds the CSV entry for a given standings player name.
+function findCSVEntry(standingsName) {
+  // Check saved/hardcoded map first: map key is DK username → standings name
+  // So we need to search the values
+  for (const [dk, sName] of Object.entries(savedMap)) {
+    if (sName === standingsName) return lineups.find(l => l.dkName === dk) || null;
+  }
+  for (const [dk, sName] of Object.entries(NAME_MAP)) {
+    if (sName === standingsName) return lineups.find(l => l.dkName === dk) || null;
+  }
+  // Auto match: normalize and compare
+  const sp = norm(standingsName);
+  return lineups.find(l => norm(l.dkName) === sp)
+      || lineups.find(l => {
+           const dk = norm(l.dkName);
+           return dk.includes(sp) || sp.includes(dk);
+         })
+      || null;
+}
+
+// ─── Render ───────────────────────────────
+// Standings-driven: always shows all 32 playoff players.
+// Overlays DK scores from the CSV where available; 0 if not in contest.
+function render() {
+  if (!lineups.length) return;
+  if (!standings.length) standings = FALLBACK_STANDINGS;
+
+  const pool = standings.filter(s => parseRank(s.rank) <= 32 && s.player);
+
+  const entries = pool.map(s => {
+    const csv = lineups.length ? findCSVEntry(s.player) : null;
+    return {
+      displayName: s.player,
+      dkScore:     csv ? (csv.fpts || 0) : 0,
+      seasonPts:   s.fedexPts,
+      currentRank: s.rank,
+      inContest:   !!csv,
+    };
+  });
+
+  // Rank by DK score → assign FedEx distribution
+  entries.sort((a,b) => b.dkScore - a.dkScore);
+  applyDist(entries);
+
+  // Projected total = season pts + this week's projected FedEx pts
+  entries.forEach(e => { e.projTotal = e.seasonPts + e.projPts; });
+  entries.sort((a,b) => b.projTotal - a.projTotal || b.seasonPts - a.seasonPts);
+  entries.forEach((e,i) => { e.projRank = i + 1; });
+
+  let html = '';
+  entries.forEach(e => {
+    const diff     = e.currentRank - e.projRank;
+    const moveHTML = diff > 0
+      ? `<span class="mv mv-up">▲${diff}</span>`
+      : diff < 0
+        ? `<span class="mv mv-dn">▼${Math.abs(diff)}</span>`
+        : `<span class="mv mv-same">—</span>`;
+
+    const rankCls  = e.projRank <= 3 ? 'rank gold' : 'rank';
+    const rowStyle = e.projRank <= 20 ? 'background:#f0f4f8;' : '';
+    const cutRow   = e.projRank === 21
+      ? `<tr class="cutoff-row"><td colspan="7">── BMW Championship Cutline · Top 20 Advance ──</td></tr>` : '';
+
+    const dkStr    = e.inContest ? e.dkScore.toFixed(2) : '<span style="color:#bbb;font-size:12px;">NO ENTRY</span>';
+    const seasStr  = e.seasonPts > 0 ? e.seasonPts.toLocaleString() : '—';
+    const projStr  = e.projPts > 0
+      ? `<span class="proj-pts" style="color:var(--green)">+${e.projPts % 1 ? e.projPts.toFixed(1) : e.projPts.toFixed(0)}</span>`
+      : '<span class="proj-pts" style="color:#bbb">—</span>';
+    const totalStr = e.projTotal > 0 ? e.projTotal.toLocaleString() : '—';
+
+    html += `
+      ${cutRow}
+      <tr style="${rowStyle}">
+        <td><span class="${rankCls}">${e.projRank}</span></td>
+        <td style="text-align:center">${moveHTML}</td>
+        <td><span class="pname">${e.displayName}</span></td>
+        <td class="r"><span class="dk-score">${dkStr}</span></td>
+        <td class="r"><span class="season-pts">${seasStr}</span></td>
+        <td class="r">${projStr}</td>
+        <td class="r"><span class="total-pts">${totalStr}</span></td>
+      </tr>`;
+  });
+
+  document.getElementById('standings-body').innerHTML = html;
+  document.getElementById('table-wrap').style.display  = 'block';
+  document.getElementById('empty-state').style.display = 'none';
+
+  // Find CSV entries that didn't match any of the 32 standings players
+  const matchedLineups = new Set(pool.map(s => findCSVEntry(s.player)).filter(Boolean));
+  pendingUnmatched = lineups.filter(l => !matchedLineups.has(l)).map(l => l.dkName);
+
+  const warn = document.getElementById('match-warn');
+  if (pendingUnmatched.length) {
+    warn.innerHTML = `⚠ ${pendingUnmatched.length} CSV entr${pendingUnmatched.length > 1 ? 'ies' : 'y'} not matched to standings: <strong>${pendingUnmatched.join(', ')}</strong> — <a href="#" onclick="openMappingPanel();return false;" style="color:#c08020;font-weight:700;">map them</a>`;
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+    document.getElementById('mapping-panel').style.display = 'none';
+  }
+}
+
+// ─── Standings refresh ───────────────────
+async function refreshStandings() {
+  try {
+    await fetchStandings();
+    if (lineups.length) render();
+  } catch(e) {}
+}
+
+// ─── CSV Upload ───────────────────────────
+document.getElementById('csv-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const fr = new FileReader();
+  fr.onload = ev => {
+    const statusEl = document.getElementById('upload-status');
+    try {
+      const { entries, hasPts } = parseDKCSV(ev.target.result);
+      lineups = entries;
+      try { localStorage.setItem(LS_KEY, JSON.stringify(lineups)); } catch(_) {}
+
+      let msg = `✓ ${lineups.length} lineups loaded`;
+      msg += hasPts
+        ? ` · DK scores loaded from CSV`
+        : ` · ⚠ No scores in CSV yet — scores appear after the round starts`;
+      msg += ` · ${new Date().toLocaleTimeString()}`;
+      statusEl.textContent = msg;
+      statusEl.style.color = hasPts ? '#4dc57e' : '#e09020';
+      document.getElementById('share-btn').style.display = 'inline-flex';
+
+      render();
+    } catch(err) {
+      statusEl.textContent = '✗ ' + err.message;
+      statusEl.style.color = '#e05050';
+    }
+  };
+  fr.readAsText(file);
+  this.value = '';
+});
+
+// ─── Share URL ────────────────────────────
+// The shared URL encodes lineups + current fpts, so viewers see
+// the exact same scores. Commissioner re-uploads + re-shares to update.
+function copyShareURL() {
+  try {
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(lineups))));
+    const url = location.origin + location.pathname + '#lineups=' + encoded;
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('share-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.innerHTML = '🔗 Share URL'; }, 2500);
+    });
+  } catch(e) { alert('Please copy the URL from the browser address bar.'); }
+}
+
+// ─── Load saved lineups ───────────────────
+function loadSaved() {
+  // URL hash = viewer mode (upload bar hidden)
+  try {
+    if (location.hash.startsWith('#lineups=')) {
+      lineups = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(9)))));
+      if (lineups.length) { document.querySelector('.upload-bar').style.display = 'none'; return; }
+    }
+  } catch(_) {}
+  // localStorage = commissioner resuming
+  try {
+    const s = localStorage.getItem(LS_KEY);
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed) && parsed.length) {
+        lineups = parsed;
+        const hasPts = lineups.some(l => l.fpts > 0);
+        document.getElementById('upload-status').textContent =
+          `✓ ${lineups.length} lineups from last session${hasPts ? ' (scores included)' : ''} — re-upload CSV to refresh`;
+        document.getElementById('upload-status').style.color = '#4dc57e';
+        document.getElementById('share-btn').style.display = 'inline-flex';
+      }
+    }
+  } catch(_) {}
+}
+
+// ─── Init ─────────────────────────────────
+loadSavedMap();
+loadSaved();
+fetchStandings().then(() => {
+  if (lineups.length) render();
+});
+</script>
+</body>
+</html>
