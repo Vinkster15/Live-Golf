@@ -87,13 +87,12 @@
     /* Table */
     #table-wrap { display: none; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    col.col-rank  { width: 9%; }
-    col.col-mv    { width: 11%; }
-    col.col-player{ width: 27%; }
-    col.col-dk    { width: 15%; }
-    col.col-start { width: 13%; }
-    col.col-live  { width: 12%; }
-    col.col-total { width: 13%; }
+    col.col-rank  { width: 10%; }
+    col.col-mv    { width: 13%; }
+    col.col-player{ width: 34%; }
+    col.col-start { width: 15%; }
+    col.col-live  { width: 13%; }
+    col.col-total { width: 15%; }
     thead th { padding: 8px 4px; font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #6aaa7a; background: var(--g900); text-align: left; overflow-wrap: break-word; }
     thead th.r { text-align: right; }
     thead th:first-child { padding-left: 8px; }
@@ -120,7 +119,6 @@
     .rank      { font-size: 13px; font-weight: 900; color: var(--text-dim); }
     .rank.gold { color: var(--gold); }
     .pname     { font-size: 12px; font-weight: 700; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .dk-score  { font-size: 12px; font-weight: 800; color: var(--g700); }
     .season-pts{ font-size: 11px; color: var(--text-dim); }
     .proj-pts  { font-size: 11px; font-weight: 700; }
     .total-pts { font-size: 12px; font-weight: 900; }
@@ -183,14 +181,13 @@
     <table>
       <colgroup>
         <col class="col-rank"><col class="col-mv"><col class="col-player">
-        <col class="col-dk"><col class="col-start"><col class="col-live"><col class="col-total">
+        <col class="col-start"><col class="col-live"><col class="col-total">
       </colgroup>
       <thead>
         <tr>
           <th class="col-rank">#</th>
           <th class="col-mv">+/−</th>
           <th class="col-player">Player</th>
-          <th class="r col-dk"><span class="th-full">DK Score</span><span class="th-abbr">DK</span></th>
           <th class="r col-start"><span class="th-full">Start Pts</span><span class="th-abbr">Start</span></th>
           <th class="r col-live"><span class="th-full">Live +</span><span class="th-abbr">Live</span></th>
           <th class="r col-total"><span class="th-full">Total Live Pts</span><span class="th-abbr">Total</span></th>
@@ -516,9 +513,8 @@ function render() {
     const rankCls  = e.projRank <= 3 ? 'rank gold' : 'rank';
     const rowStyle = e.projRank <= 20 ? 'background:#f0f4f8;' : '';
     const cutRow   = e.projRank === 21
-      ? `<tr class="cutoff-row"><td colspan="7">── BMW Championship Cutline · Top 20 Advance ──</td></tr>` : '';
+      ? `<tr class="cutoff-row"><td colspan="6">── BMW Championship Cutline · Top 20 Advance ──</td></tr>` : '';
 
-    const dkStr    = e.inContest ? e.dkScore.toFixed(2) : '<span style="color:#bbb;font-size:12px;">NO ENTRY</span>';
     const seasStr  = e.seasonPts > 0 ? e.seasonPts.toLocaleString() : '—';
     const projStr  = e.projPts > 0
       ? `<span class="proj-pts" style="color:var(--green)">+${e.projPts % 1 ? e.projPts.toFixed(1) : e.projPts.toFixed(0)}</span>`
@@ -531,7 +527,6 @@ function render() {
         <td><span class="${rankCls}">${e.projRank}</span></td>
         <td style="text-align:center">${moveHTML}</td>
         <td><span class="pname">${e.displayName}</span></td>
-        <td class="r"><span class="dk-score">${dkStr}</span></td>
         <td class="r"><span class="season-pts">${seasStr}</span></td>
         <td class="r">${projStr}</td>
         <td class="r"><span class="total-pts">${totalStr}</span></td>
