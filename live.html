@@ -557,18 +557,26 @@ document.getElementById('csv-input').addEventListener('change', function() {
 });
 
 // ─── Share URL ────────────────────────────
-// The shared URL encodes lineups + current fpts, so viewers see
-// the exact same scores. Commissioner re-uploads + re-shares to update.
-function copyShareURL() {
+async function copyShareURL() {
+  if (!lineups.length) { alert('Upload the CSV first.'); return; }
+  const btn = document.getElementById('share-btn');
+  btn.textContent = '⏳ Shortening…';
   try {
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(lineups))));
-    const url = location.origin + location.pathname + '#lineups=' + encoded;
-    navigator.clipboard.writeText(url).then(() => {
-      const btn = document.getElementById('share-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => { btn.innerHTML = '🔗 Share URL'; }, 2500);
-    });
-  } catch(e) { alert('Please copy the URL from the browser address bar.'); }
+    const longUrl = location.origin + location.pathname + '#lineups=' + encoded;
+    let shareUrl = longUrl;
+    try {
+      const res = await fetch('https://api.shrtco.de/v2/shorten?url=' + encodeURIComponent(longUrl));
+      const data = await res.json();
+      if (data.ok) shareUrl = data.result.short_link;
+    } catch(_) {} // fallback to long URL if shortener fails
+    await navigator.clipboard.writeText(shareUrl);
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.innerHTML = '🔗 Share URL'; }, 2500);
+  } catch(e) {
+    btn.innerHTML = '🔗 Share URL';
+    alert('Could not copy — please copy the URL manually from the address bar.');
+  }
 }
 
 // ─── Load saved lineups ───────────────────
