@@ -117,10 +117,10 @@
     .proj-pts  { font-size: 12px; font-weight: 700; }
     .total-pts { font-size: 13px; font-weight: 900; }
 
-    /* Mobile — hide Season Pts and + This Week columns */
+    /* Mobile — tighten padding so all columns fit instead of hiding Start Pts / Live + */
     @media (max-width: 480px) {
-      thead th:nth-child(5), tbody td:nth-child(5),
-      thead th:nth-child(6), tbody td:nth-child(6) { display: none; }
+      td, thead th { padding-left: 6px; padding-right: 6px; }
+      .header h1 { font-size: 17px; }
     }
   </style>
 </head>
@@ -129,7 +129,8 @@
 <div class="header">
   <div class="header-inner">
     <h1>⛳ FedEx St. Jude <span>Live Standings</span></h1>
-    <div class="header-sub">Thru Round 1</div>
+    <div class="header-sub">Live Round 2</div>
+    <div id="last-updated"></div>
   </div>
 </div>
 
@@ -173,9 +174,9 @@
           <th style="width:48px">+/−</th>
           <th>Player</th>
           <th class="r">DK Score</th>
-          <th class="r">Season Pts</th>
-          <th class="r">+ This Week</th>
-          <th class="r">Total</th>
+          <th class="r">Start Pts</th>
+          <th class="r">Live +</th>
+          <th class="r">Total Live Pts</th>
         </tr>
       </thead>
       <tbody id="standings-body"></tbody>
@@ -199,6 +200,17 @@ const NAME_MAP = {
   // 'DK_Username':  'Standings Name',
 };
 const LS_KEY     = 'golf_live_v4';  // v4 = CSV-fpts format
+const TS_KEY      = 'golf_live_v4_ts';
+
+function formatTimestamp(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return 'Last updated ' + d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+}
+
+function setLastUpdated(ts) {
+  document.getElementById('last-updated').textContent = formatTimestamp(ts);
+}
 
 // ─── State ────────────────────────────────
 // lineups: [{dkName:string, golfers:string[], fpts:number}]
@@ -545,7 +557,12 @@ document.getElementById('csv-input').addEventListener('change', function() {
     try {
       const { entries, hasPts } = parseDKCSV(ev.target.result);
       lineups = entries;
-      try { localStorage.setItem(LS_KEY, JSON.stringify(lineups)); } catch(_) {}
+      const nowTs = Date.now();
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify(lineups));
+        localStorage.setItem(TS_KEY, String(nowTs));
+      } catch(_) {}
+      setLastUpdated(nowTs);
 
       let msg = `✓ ${lineups.length} lineups loaded`;
       msg += hasPts
@@ -572,7 +589,8 @@ async function copyShareURL() {
   const btn = document.getElementById('share-btn');
   btn.textContent = '⏳ Shortening…';
   try {
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(lineups))));
+    const ts = Number(localStorage.getItem(TS_KEY)) || Date.now();
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({ lineups, ts }))));
     const longUrl = location.origin + location.pathname + '#lineups=' + encoded;
     let shareUrl = longUrl;
     try {
@@ -594,7 +612,14 @@ function loadSaved() {
   // URL hash = viewer mode (upload bar hidden)
   try {
     if (location.hash.startsWith('#lineups=')) {
-      lineups = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(9)))));
+      const decoded = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(9)))));
+      // New format: {lineups, ts}. Old shared links: a bare array.
+      if (Array.isArray(decoded)) {
+        lineups = decoded;
+      } else {
+        lineups = decoded.lineups || [];
+        if (decoded.ts) setLastUpdated(decoded.ts);
+      }
       if (lineups.length) { document.querySelector('.upload-bar').style.display = 'none'; return; }
     }
   } catch(_) {}
@@ -610,6 +635,8 @@ function loadSaved() {
           `✓ ${lineups.length} lineups from last session${hasPts ? ' (scores included)' : ''} — re-upload CSV to refresh`;
         document.getElementById('upload-status').style.color = '#4dc57e';
         document.getElementById('share-btn').style.display = 'inline-flex';
+        const savedTs = Number(localStorage.getItem(TS_KEY));
+        if (savedTs) setLastUpdated(savedTs);
       }
     }
   } catch(_) {}
