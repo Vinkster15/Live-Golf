@@ -99,7 +99,7 @@
 <div class="header">
   <div class="header-inner">
     <h1>⛳ FedEx St. Jude <span>Live Standings</span></h1>
-    <div class="header-sub">Loading…</div>
+    <div class="header-sub">Thru Round 3</div>
   </div>
 </div>
 
@@ -185,7 +185,7 @@ async function fetchLeaderboard() {
     // Metadata: col J (index 9) of header row = update timestamp string
     //           col J (index 9) of first data row = round label
     const updatedStr = rows[0][9] || '';
-    const roundLabel = (rows[1] && rows[1][9]) ? rows[1][9] : 'Live Standings';
+    const roundLabel = (rows[1] && rows[1][9]) ? rows[1][9] : 'Thru Round 3';
 
     document.getElementById('last-updated').textContent = updatedStr;
     document.querySelector('.header-sub').textContent   = roundLabel;
