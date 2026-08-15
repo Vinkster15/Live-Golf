@@ -87,10 +87,18 @@
     footer p { font-size: 11px; color: #3d5a3a; }
     footer span { color: var(--gold); }
 
-    /* Mobile: hide Season Pts + This Week columns */
-    @media (max-width: 480px) {
-      thead th:nth-child(5), tbody td:nth-child(5),
-      thead th:nth-child(6), tbody td:nth-child(6) { display: none; }
+    /* Mobile: hide DK Score column, show everything else */
+    @media (max-width: 520px) {
+      thead th:nth-child(4), tbody td:nth-child(4) { display: none; }
+      td, thead th { padding: 7px 6px; font-size: 11px; }
+      td:first-child, thead th:first-child { padding-left: 10px; }
+      td:last-child,  thead th:last-child  { padding-right: 10px; }
+      .rank  { font-size: 12px; }
+      .pname { font-size: 12px; }
+      .dk-score, .total-pts { font-size: 12px; }
+      .season-pts, .proj-pts { font-size: 11px; }
+      .mv { font-size: 9px; min-width: 22px; }
+      thead th { font-size: 8px; letter-spacing: .06em; }
     }
   </style>
 </head>
