@@ -156,21 +156,7 @@ const SHEET_ID  = '1IQlmVubEOBhZU3-iQDSi8i_75TBgYKApLpKDn6HHqOw';
 const OUT_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Output`;
 const EXEC_URL  = 'https://script.google.com/macros/s/AKfycbxWd5_dFgW6qNDYGI4lcbAnIe0EhCaru9vh9xxkJT0YcfoDK4VWh7g7YiMJtLIqdu6d3A/exec';
 
-// Manual refresh: trigger the Apps Script update, then fetch fresh data
-async function manualRefresh() {
-  const btn = document.getElementById('refresh-btn');
-  btn.textContent = '⏳ Updating…';
-  btn.disabled = true;
-  try {
-    await fetch(EXEC_URL, { mode: 'no-cors' });
-  } catch(_) {}
-  // Wait for Apps Script to finish writing, then fetch
-  setTimeout(async () => {
-    await fetchLeaderboard();
-    btn.textContent = '↻ Refresh';
-    btn.disabled = false;
-  }, 5000);
-}
+function manualRefresh() { fetchLeaderboard(); }
 
 // ── CSV parser ────────────────────────────────────────────────────────
 function parseCSVLine(line) {
