@@ -107,8 +107,8 @@
 
 <div class="header">
   <div class="header-inner">
-    <h1>⛳ FedEx St. Jude <span>Live Standings</span></h1>
-    <div class="header-sub">Thru Round 3</div>
+    <h1>⛳ FedEx BMW <span>Live Standings</span></h1>
+    <div class="header-sub">Thru Round 1</div>
   </div>
 </div>
 
@@ -197,7 +197,7 @@ async function fetchLeaderboard() {
     // Metadata: col J (index 9) of header row = update timestamp string
     //           col J (index 9) of first data row = round label
     const updatedStr = rows[0][9] || '';
-    const roundLabel = (rows[1] && rows[1][9]) ? rows[1][9] : 'Thru Round 3';
+    const roundLabel = (rows[1] && rows[1][9]) ? rows[1][9] : 'Thru Round 1';
 
     document.getElementById('last-updated').textContent = updatedStr;
     document.querySelector('.header-sub').textContent   = roundLabel;
@@ -232,11 +232,11 @@ function renderTable(data) {
   tbody.innerHTML = '';
 
   data.forEach((e, idx) => {
-    // Cutline before rank 21
-    if (e.rank === 21) {
+    // Cutline before rank 11
+    if (e.rank === 11) {
       const cut = document.createElement('tr');
       cut.className = 'cutoff-row';
-      cut.innerHTML = '<td colspan="7">── TOP 20 ADVANCE TO BMW CHAMPIONSHIP ──</td>';
+      cut.innerHTML = '<td colspan="7">── TOP 10 ADVANCE TO TOUR CHAMPIONSHIP ──</td>';
       tbody.appendChild(cut);
     }
 
