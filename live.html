@@ -88,16 +88,14 @@
     footer p { font-size: 11px; color: #3d5a3a; }
     footer span { color: var(--gold); }
 
-    /* Mobile: hide DK Score column, show everything else */
+    /* Mobile: hide Season Pts, keep Prize/Movement/Player/DK Score/Total */
     @media (max-width: 520px) {
       thead th:nth-child(4), tbody td:nth-child(4) { display: none; }
       td, thead th { padding: 7px 6px; font-size: 11px; }
       td:first-child, thead th:first-child { padding-left: 10px; }
       td:last-child,  thead th:last-child  { padding-right: 10px; }
-      .rank  { font-size: 12px; }
       .pname { font-size: 12px; }
       .dk-score, .total-pts { font-size: 12px; }
-      .season-pts, .proj-pts { font-size: 11px; }
       .mv { font-size: 9px; min-width: 22px; }
       thead th { font-size: 8px; letter-spacing: .06em; }
     }
@@ -107,8 +105,8 @@
 
 <div class="header">
   <div class="header-inner">
-    <h1>⛳ FedEx BMW <span>Live Standings</span></h1>
-    <div class="header-sub">Thru Round 1</div>
+    <h1>⛳ FedEx TOUR Championship <span>Live Standings</span></h1>
+    <div class="header-sub">Live</div>
   </div>
 </div>
 
@@ -132,12 +130,11 @@
     <table>
       <thead>
         <tr>
-          <th style="width:40px">#</th>
-          <th style="width:44px">+/−</th>
+          <th style="width:70px">Prize</th>
+          <th style="width:40px">+/−</th>
           <th>Player</th>
-          <th class="r">DK Score</th>
           <th class="r">Season Pts</th>
-          <th class="r">+ This Week</th>
+          <th class="r">DK Score</th>
           <th class="r">Total</th>
         </tr>
       </thead>
@@ -204,14 +201,14 @@ async function fetchLeaderboard() {
 
     // Parse data rows
     const data = rows.slice(1).map(r => ({
-      rank:      parseInt(r[ci('rank')])      || 0,
-      player:    r[ci('player')]              || '',
-      dkScore:   parseFloat(r[ci('dkscore')]) || 0,
+      rank:      parseInt(r[ci('rank')])        || 0,
+      player:    r[ci('player')]                || '',
+      dkScore:   parseFloat(r[ci('dkscore')])   || 0,
       seasonPts: parseFloat(r[ci('seasonpts')]) || 0,
-      fedexDist: parseFloat(r[ci('fedexdist')]) || 0,
-      total:     parseFloat(r[ci('total')])   || 0,
-      movement:  parseInt(r[ci('movement')])  || 0,
+      total:     parseFloat(r[ci('total')])     || 0,
+      movement:  parseInt(r[ci('movement')])    || 0,
       inContest: r[ci('incontest')] === '1',
+      prize:     parseInt(r[ci('prize')])       || 0,
     })).filter(e => e.player);
 
     renderTable(data);
@@ -232,14 +229,6 @@ function renderTable(data) {
   tbody.innerHTML = '';
 
   data.forEach((e, idx) => {
-    // Cutline before rank 11
-    if (e.rank === 11) {
-      const cut = document.createElement('tr');
-      cut.className = 'cutoff-row';
-      cut.innerHTML = '<td colspan="7">── TOP 10 ADVANCE TO TOUR CHAMPIONSHIP ──</td>';
-      tbody.appendChild(cut);
-    }
-
     const tr = document.createElement('tr');
     tr.style.background = idx % 2 === 0 ? '#fff' : '#fafcf9';
 
@@ -248,21 +237,18 @@ function renderTable(data) {
     if (e.movement > 0)      mv = `<span class="mv mv-up">▲${e.movement}</span>`;
     else if (e.movement < 0) mv = `<span class="mv mv-dn">▼${Math.abs(e.movement)}</span>`;
 
-    const rankCls = e.rank === 1 ? 'rank gold' : 'rank';
+    const prizeStr  = e.prize ? '$' + e.prize.toLocaleString() : '';
+    const prizeHtml = `<span style="font-size:13px;font-weight:800;color:var(--gold)">${prizeStr}</span>`;
     const dkHtml  = e.inContest
       ? `<span class="dk-score">${e.dkScore.toFixed(2)}</span>`
       : `<span style="color:#aaa;font-size:11px">NO ENTRY</span>`;
-    const fdHtml  = e.fedexDist > 0
-      ? `<span class="proj-pts">+${e.fedexDist.toFixed(1)}</span>`
-      : (e.inContest ? '0' : '—');
 
     tr.innerHTML = `
-      <td><span class="${rankCls}">${e.rank}</span></td>
+      <td>${prizeHtml}</td>
       <td>${mv}</td>
       <td class="pname">${e.player}</td>
-      <td class="r">${dkHtml}</td>
       <td class="r season-pts">${e.seasonPts.toFixed(1)}</td>
-      <td class="r">${fdHtml}</td>
+      <td class="r">${dkHtml}</td>
       <td class="r total-pts">${e.total.toFixed(1)}</td>
     `;
     tbody.appendChild(tr);
