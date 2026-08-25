@@ -153,6 +153,28 @@ const SHEET_ID  = '1IQlmVubEOBhZU3-iQDSi8i_75TBgYKApLpKDn6HHqOw';
 const OUT_URL   = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Output`;
 const EXEC_URL  = 'https://script.google.com/macros/s/AKfycbxWd5_dFgW6qNDYGI4lcbAnIe0EhCaru9vh9xxkJT0YcfoDK4VWh7g7YiMJtLIqdu6d3A/exec';
 
+// ── Pre-tournament static data (shown until CSV is uploaded Thursday) ─
+const STATIC_DATA = [
+  {rank:1,  player:'smittyjo5',    seasonPts:1286.5, dkScore:0, total:1286.5, movement:0, inContest:false, prize:1600},
+  {rank:2,  player:'PonyBoy1319',  seasonPts:1235.5, dkScore:0, total:1235.5, movement:0, inContest:false, prize:1200},
+  {rank:3,  player:'creythauncey', seasonPts:1224.5, dkScore:0, total:1224.5, movement:0, inContest:false, prize:950},
+  {rank:4,  player:'jichrist',     seasonPts:1199.5, dkScore:0, total:1199.5, movement:0, inContest:false, prize:750},
+  {rank:5,  player:'HeHateMe14',   seasonPts:1173.5, dkScore:0, total:1173.5, movement:0, inContest:false, prize:600},
+  {rank:6,  player:'DJderek13',    seasonPts:1172.5, dkScore:0, total:1172.5, movement:0, inContest:false, prize:500},
+  {rank:7,  player:'vinkster15',   seasonPts:1169,   dkScore:0, total:1169,   movement:0, inContest:false, prize:400},
+  {rank:8,  player:'watz23',       seasonPts:1167.5, dkScore:0, total:1167.5, movement:0, inContest:false, prize:350},
+  {rank:9,  player:'mdougherty88', seasonPts:1154.5, dkScore:0, total:1154.5, movement:0, inContest:false, prize:300},
+  {rank:10, player:'rhettnovy09',  seasonPts:1149,   dkScore:0, total:1149,   movement:0, inContest:false, prize:250},
+];
+
+// Returns true only when the sheet has live TOUR data with real DK scores
+function isLiveData(data) {
+  const tourPlayers = new Set(STATIC_DATA.map(e => e.player.toLowerCase()));
+  const hasCorrectPlayers = data.length === 10 && data.every(e => tourPlayers.has(e.player.toLowerCase()));
+  const hasScores = data.some(e => e.dkScore > 0);
+  return hasCorrectPlayers && hasScores;
+}
+
 function manualRefresh() { fetchLeaderboard(); }
 
 // ── CSV parser ────────────────────────────────────────────────────────
@@ -211,12 +233,14 @@ async function fetchLeaderboard() {
       prize:     parseInt(r[ci('prize')])       || 0,
     })).filter(e => e.player);
 
-    renderTable(data);
-    document.getElementById('error-state').style.display = 'none';
+    if (isLiveData(data)) {
+      renderTable(data);
+      document.getElementById('error-state').style.display = 'none';
+    }
+    // If not live yet, keep showing the static pre-tournament view
 
   } catch (e) {
-    showError('Could not load data. Make sure the Google Sheet is shared publicly (File → Share → Anyone with the link → Viewer).');
-    document.getElementById('last-updated').textContent = 'Error loading';
+    // Sheet not available — static view stays up, no error shown
   }
 }
 
@@ -264,7 +288,10 @@ function showError(msg) {
   el.textContent   = '⚠ ' + msg;
 }
 
-// ── Init: load now, then auto-refresh every 60s ───────────────────────
+// ── Init: show static view immediately, go live when sheet has scores ─
+renderTable(STATIC_DATA);
+document.querySelector('.header-sub').textContent = 'Pre-Tournament Standings';
+document.getElementById('last-updated').textContent = '';
 fetchLeaderboard();
 setInterval(fetchLeaderboard, 60000);
 </script>
